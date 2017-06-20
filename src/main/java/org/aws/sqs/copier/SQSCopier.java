@@ -12,14 +12,14 @@ import java.util.logging.Logger;
  * Simple application that shows how to use Amazon SQS client to read, send and delete messages
  * between different queues.
  *
+ * NOTICE: AWS credentials (AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY) should be declared as Environment Variables.
+ *
  * Created by arymar on 19.06.17.
  */
 public class SQSCopier {
   private static final Logger logger = Logger.getLogger("SQSCopier");
   //Range 1 - 10
   private static final int MAX_MESSAGES_PER_REQUEST = 1;
-  //Should application remove message from source queue after copying to destination?
-  private static final boolean REMOVE_MESSAGE_FROM_SOURCE_QUEUE = false;
 
   private final AmazonSQS amazonSQSClient;
 
@@ -30,10 +30,7 @@ public class SQSCopier {
    * @param region AWS Region for SQS Client.
    */
   public SQSCopier(String region) {
-    amazonSQSClient = AmazonSQSClientBuilder
-        .standard()
-        .withRegion(region)
-        .build();
+    amazonSQSClient = buildClient(region);
   }
 
   /**
@@ -41,8 +38,9 @@ public class SQSCopier {
    *
    * @param fromQueue Source queue name.
    * @param toQueue   Destination queue name.
+   * @param deleteSourceMessage remove message from source queue.
    */
-  public void startCopying(String fromQueue, String toQueue) {
+  public void startCopying(String fromQueue, String toQueue, boolean deleteSourceMessage) {
     logger.info("Start copying data from - " + fromQueue + " to - " + toQueue);
 
     String fromQueueUrl = amazonSQSClient.getQueueUrl(fromQueue).getQueueUrl();
@@ -56,9 +54,22 @@ public class SQSCopier {
 
     while ((messageList = amazonSQSClient.receiveMessage(receiveMessageRequest).getMessages()).size() > 0) {
 
-      copyMessages(messageList, fromQueueUrl, toQueueUrl);
+      copyMessages(messageList, fromQueueUrl, toQueueUrl, deleteSourceMessage);
 
     }
+  }
+
+  /**
+   * Build Amazon SQS client based on Region.
+   *
+   * @param region AWS Region.
+   * @return {@link AmazonSQS} instance.
+   */
+  protected AmazonSQS buildClient(String region){
+    return AmazonSQSClientBuilder
+        .standard()
+        .withRegion(region)
+        .build();
   }
 
   /**
@@ -67,14 +78,16 @@ public class SQSCopier {
    * @param messages read messages from source queue.
    * @param fromQueueUrl from queue URL.
    * @param toQueueUrl to queue URL.
+   * @param deleteSourceMessage remove message from source queue.
    */
-  private void copyMessages(List<Message> messages, String fromQueueUrl, String toQueueUrl) {
+  private void copyMessages(List<Message> messages, String fromQueueUrl, String toQueueUrl,
+                            boolean deleteSourceMessage) {
     for (Message message : messages) {
       logger.info("Copy message :" + message.getBody());
 
       amazonSQSClient.sendMessage(toQueueUrl, message.getBody());
 
-      if (REMOVE_MESSAGE_FROM_SOURCE_QUEUE) {
+      if (deleteSourceMessage) {
         amazonSQSClient.deleteMessage(fromQueueUrl, message.getReceiptHandle());
         logger.info("Message removed from source queue!");
       }
@@ -106,6 +119,6 @@ public class SQSCopier {
     String fromQueueName = args[1];
     String toQueueName = args[2];
 
-    new SQSCopier(region).startCopying(fromQueueName, toQueueName);
+    new SQSCopier(region).startCopying(fromQueueName, toQueueName, false);
   }
 }
