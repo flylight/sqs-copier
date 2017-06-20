@@ -1,7 +1,6 @@
 package org.aws.sqs.copier;
 
 import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.GetQueueUrlRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlResult;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
@@ -14,7 +13,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Test cases for {@link SQSCopier} class.
@@ -35,7 +39,7 @@ public class SQSCopierTest {
 
     AmazonSQS amazonSQS = mock(AmazonSQS.class);
 
-    SQSCopier sqsCopier = new SQSCopier(region){
+    SQSCopier sqsCopier = new SQSCopier(region) {
       @Override
       protected AmazonSQS buildClient(String region) {
         return amazonSQS;
@@ -89,7 +93,7 @@ public class SQSCopierTest {
 
     AmazonSQS amazonSQS = mock(AmazonSQS.class);
 
-    SQSCopier sqsCopier = new SQSCopier(region){
+    SQSCopier sqsCopier = new SQSCopier(region) {
       @Override
       protected AmazonSQS buildClient(String region) {
         return amazonSQS;
